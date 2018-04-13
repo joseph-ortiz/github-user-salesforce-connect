@@ -28,23 +28,31 @@ global class GitHubDataSourceConnection extends
      *   
      *   Returns a list of rows as the query results.
      **/
-    override global DataSource.TableResult query(
-            DataSource.QueryContext context) {
+    override global DataSource.TableResult query(DataSource.QueryContext context) {
         DataSource.Filter filter = context.tableSelection.filter;
         String url;
+        
+
         if (filter != null) {
-            String thisColumnName = filter.columnName;
-            if (thisColumnName != null &&
-               (thisColumnName.equals('ExternalId') ||
-                thisColumnName.equals('login')))
-                url = 'https://api.github.com/users/'
-                        + filter.columnValue;
-            else
-                    url = 'https://api.github.com/users';
+            String thisColumnName;
+            for(DataSource.Filter f : filter.subfilters)
+            {
+                thisColumnName = f.columnName;
+                System.debug(thisColumnName);
+                if (thisColumnName != null &&
+                    (thisColumnName.equals('ExternalId') ||
+                     thisColumnName.equals('login')))
+                    url = 'https://api.github.com/users/' + f.columnValue;
+            }
+            if(String.isBlank(thisColumnName)){
+                url = 'https://api.github.com/users';
+            }
+            System.debug(thisColumnName);
+            
         } else {
             url = 'https://api.github.com/users';
         }
-
+                
         /**
          * Filters, sorts, and applies limit and offset clauses.
          **/
@@ -204,6 +212,7 @@ global class GitHubDataSourceConnection extends
         request.setEndPoint(url);
         request.setMethod('GET');
         HttpResponse response = httpProtocol.send(request);
+        System.debug(url);
         return response.getBody();
     }
 }
